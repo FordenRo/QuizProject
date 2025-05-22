@@ -7,12 +7,19 @@ from database import Option, Question, Quiz, session
 from states.quiz import QuizCreationStates
 
 router = Router()
+cancel_markup = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Отмена', callback_data='cancel')]])
 
 
 @router.message(Command('create_quiz'))
 async def create_quiz(message: Message, bot: Bot, state: FSMContext):
-    await bot.send_message(message.chat.id, 'Введи заголовок для опроса')
+    await bot.send_message(message.chat.id, 'Введи заголовок для опроса', reply_markup=cancel_markup)
     await state.set_state(QuizCreationStates.title)
+
+
+@router.callback_query(F.data == 'cancel')
+async def cancel(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.clear()
 
 
 @router.message(QuizCreationStates.title)

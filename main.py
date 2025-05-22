@@ -3,7 +3,7 @@ from asyncio import run
 from aiogram import Bot, Dispatcher
 
 from database import Base, engine
-from handlers import quiz_creation, quiz, start
+from handlers import quiz_creation, quiz, start, results
 
 TOKEN = '7741086976:AAFpPtgxGbHLp6KZRX_MQ_H9JQ8bZEQOifw'
 
@@ -16,6 +16,7 @@ async def main():
 
     dispatcher.include_routers(start.router,
                                quiz_creation.router,
+                               results.router,
                                quiz.router)
 
     await dispatcher.start_polling(bot)

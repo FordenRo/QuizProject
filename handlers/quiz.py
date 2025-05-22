@@ -22,6 +22,7 @@ async def start_quiz(callback: CallbackQuery, bot: Bot):
     quiz = session.scalar(select(Quiz).where(Quiz.id == quiz_id))
     question = quiz.questions[0]
     await send_question(callback.from_user.id, quiz, question, bot)
+    await callback.message.delete()
 
 
 async def send_question(chat_id: int, quiz: Quiz, ques: Question, bot: Bot, message_to_edit: Message | None = None):
@@ -37,11 +38,16 @@ async def send_question(chat_id: int, quiz: Quiz, ques: Question, bot: Bot, mess
         await bot.send_message(chat_id, text, reply_markup=markup)
 
 
-async def finish_quiz(message: Message, quiz: Quiz, bot: Bot):
+async def finish_quiz(message: Message, quiz: Quiz):
     user_answers = session.scalars(select(UserAnswer).where(UserAnswer.quiz == quiz,
                                                             UserAnswer.user_id == message.chat.id)).all()
     rights = list(filter(lambda user_answer: user_answer.option_id == user_answer.question.answer_id, user_answers))
-    await message.edit_text(f'Викторина пройдена!\n\nВы правильно ответили на {len(rights)} вопросов')
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text='Проверить ответы',
+                                               callback_data=f'res/{quiz.questions[0].id}')]])
+    await message.edit_text(f'Викторина пройдена!\n\n'
+                            f'Вы правильно ответили на {len(rights)} из {len(quiz.questions)} вопросов',
+                            reply_markup=markup)
 
 
 @router.callback_query(F.data.split('/')[0] == 'ans')
@@ -61,6 +67,6 @@ async def answer_question(callback: CallbackQuery, bot: Bot):
 
         await send_question(callback.from_user.id, quiz, next_question, bot, callback.message)
     else:
-        await finish_quiz(callback.message, quiz, bot)
+        await finish_quiz(callback.message, quiz)
 
     await callback.answer()
